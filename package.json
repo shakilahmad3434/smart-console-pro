@@ -1,6 +1,6 @@
 {
-  "name": "smart-console",
-  "version": "1.0.0",
+  "name": "smart-console-pro",
+  "version": "1.0.1",
   "description": "A drop-in replacement for Node.js console with timestamps, caller info, color-coded levels, and file logging.",
   "main": "src/index.js",
   "scripts": {
@@ -11,14 +11,14 @@
     "console",
     "logger",
     "logging",
-    "smart-console",
+    "smart-console-pro",
     "debug",
     "colors",
     "timestamp",
     "nodejs",
     "cli"
   ],
-  "author": "Shakil Ahmad [shakilahmad342100@gmail.com]",
+  "author": "Shakil Ahmad <shakilahmad342100@gmail.com>",
   "license": "MIT",
   "engines": {
     "node": ">=14.0.0"
@@ -30,10 +30,10 @@
   ],
   "repository": {
     "type": "git",
-    "url": "https://github.com/your-username/smart-console"
+    "url": "git+https://github.com/shakilahmad3434/smart-console-pro.git"
   },
   "bugs": {
-    "url": "https://github.com/your-username/smart-console/issues"
+    "url": "https://github.com/shakilahmad3434/smart-console-pro/issues"
   },
-  "homepage": "https://github.com/your-username/smart-console#readme"
+  "homepage": "https://github.com/shakilahmad3434/smart-console-pro#readme"
 }
