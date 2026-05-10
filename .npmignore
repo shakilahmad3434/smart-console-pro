@@ -1,0 +1,6 @@
+# Ignore test output and development files
+test/output.log
+*.log
+.DS_Store
+.env
+node_modules/
