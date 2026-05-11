@@ -1,6 +1,6 @@
 # smart-console-pro 🧠
 
-> A drop-in replacement for Node.js `console` — with timestamps, caller info, color-coded levels, file logging, and more.
+> A drop-in replacement for Node.js `console` — with timestamps, caller info, color-coded levels, file logging, child loggers, and more.
 
 [![npm version](https://img.shields.io/npm/v/smart-console-pro.svg)](https://www.npmjs.com/package/smart-console-pro)
 [![license](https://img.shields.io/npm/l/smart-console-pro.svg)](./LICENSE)
@@ -16,6 +16,10 @@
 | 📍 Caller Info        | Auto-detects `filename:line` from the call stack |
 | 🎨 Color-coded Levels | Each level has a distinct color                  |
 | 📁 File Logging       | Optionally write plain logs to a `.log` file     |
+| 👶 Child Loggers      | Bind metadata (e.g., `requestId`) to logs        |
+| 🚀 Production JSON    | Auto JSON output when `NODE_ENV=production`      |
+| 📦 Dual ESM/CJS       | Works natively with `import` and `require()`     |
+| 💙 TypeScript         | Fully typed out-of-the-box (`index.d.ts`)        |
 | 🔇 Silent Mode        | Suppress all output — great for tests            |
 | ⚙️ Configurable       | `configure()` for runtime customization          |
 | 🔌 Drop-in            | `global.console = require('smart-console-pro')`  |
@@ -33,15 +37,22 @@ npm install smart-console-pro
 
 ## 🚀 Quick Start
 
+**ESM (import)**
+```js
+import log from 'smart-console-pro';
+// or named exports:
+// import { info, warn, success } from 'smart-console-pro';
+
+log.info("Listening on port 3000");
+log.success("User authenticated!");
+```
+
+**CommonJS (require)**
 ```js
 const console = require("smart-console-pro");
 
 console.log("Server started");
-console.info("Listening on port 3000");
-console.warn("Memory usage is high");
 console.error("Database connection failed");
-console.debug("Request payload:", { id: 1 });
-console.success("User authenticated!");
 ```
 
 **Output:**
@@ -49,11 +60,48 @@ console.success("User authenticated!");
 ```
 [15:30:01]  ● LOG     (server.js:3)    Server started
 [15:30:01]  ℹ INFO    (server.js:4)    Listening on port 3000
-[15:30:01]  ⚠ WARN    (server.js:5)    Memory usage is high
 [15:30:01]  ✖ ERROR   (server.js:6)    Database connection failed
-[15:30:01]  ◆ DEBUG   (server.js:7)    Request payload: { "id": 1 }
 [15:30:01]  ✔ SUCCESS (server.js:8)    User authenticated!
 ```
+
+---
+
+## 👶 Child Loggers
+
+You can create a child logger to automatically bind context (like a `requestId` or `userId`) to all logs produced by that logger.
+
+```js
+import log from 'smart-console-pro';
+
+const reqLog = log.child({ requestId: 'abc-123', userId: 42 });
+
+reqLog.info('Processing request...');
+// [15:30:01]  ℹ INFO    (app.js:5)  Processing request...  {"requestId":"abc-123","userId":42}
+
+reqLog.error('Validation failed');
+// [15:30:01]  ✖ ERROR   (app.js:8)  Validation failed  {"requestId":"abc-123","userId":42}
+```
+
+---
+
+## 🚀 Production JSON Mode
+
+When you deploy your app to production, you likely want structured logs for aggregators (like Datadog, CloudWatch, or ELK).
+
+`smart-console-pro` automatically detects when `NODE_ENV=production` and switches from pretty colored output to **machine-readable JSON lines**.
+
+```bash
+# In your terminal
+export NODE_ENV=production
+node server.js
+```
+
+**Output:**
+```json
+{"level":"info","ts":"2026-05-11T12:00:00.000Z","caller":"server.js:10","msg":"Server started"}
+{"level":"error","ts":"2026-05-11T12:00:01.000Z","caller":"db.js:42","msg":"Query failed","meta":{"requestId":"abc-123"}}
+```
+> *Dev mode (default) remains pretty and colored.*
 
 ---
 
@@ -117,14 +165,16 @@ console.log("I am now smart!");
 
 ---
 
-## 🔇 Silent Mode (for tests)
+## 🆚 Comparison
 
-```js
-const console = require("smart-console-pro");
-
-beforeAll(() => console.configure({ silent: true }));
-afterAll(() => console.configure({ silent: false }));
-```
+| Feature | `smart-console-pro` | Native `console` | `winston` / `pino` |
+|---------|---------------------|------------------|--------------------|
+| **Setup required** | None (Drop-in) | None | High (Boilerplate) |
+| **Colors & Formatting** | ✅ Built-in | ❌ No | ✅ Requires plugins |
+| **Caller Info (File:Line)** | ✅ Auto-detected | ❌ No | ⚠️ Complex to setup |
+| **Child Loggers** | ✅ Yes (`.child()`) | ❌ No | ✅ Yes |
+| **Production JSON** | ✅ Auto-detects | ❌ No | ✅ Yes |
+| **Bundle Size / Deps** | **0 dependencies** | Built-in | Heavy |
 
 ---
 
@@ -132,17 +182,18 @@ afterAll(() => console.configure({ silent: false }));
 
 | Method                       | Description                     |
 | ---------------------------- | ------------------------------- |
-| `console.log(...args)`       | General log (white)             |
-| `console.info(...args)`      | Informational (cyan)            |
-| `console.warn(...args)`      | Warning (yellow)                |
-| `console.error(...args)`     | Error → stderr (red bold)       |
-| `console.debug(...args)`     | Debug (magenta)                 |
-| `console.success(...args)`   | Success (green) ✨ new          |
-| `console.time(label)`        | Start a timer                   |
-| `console.timeEnd(label)`     | End a timer and log elapsed ms  |
-| `console.configure(options)` | Update configuration at runtime |
-| `console.getConfig()`        | Get current config snapshot     |
-| `console.close()`            | Close file logger stream        |
+| `log(...args)`               | General log (white)             |
+| `info(...args)`              | Informational (cyan)            |
+| `warn(...args)`              | Warning (yellow)                |
+| `error(...args)`             | Error → stderr (red bold)       |
+| `debug(...args)`             | Debug (magenta)                 |
+| `success(...args)`           | Success (green)                 |
+| `child(meta)`                | Create bound sub-logger ✨      |
+| `time(label)`                | Start a timer                   |
+| `timeEnd(label)`             | End a timer and log elapsed ms  |
+| `configure(options)`         | Update configuration at runtime |
+| `getConfig()`                | Get current config snapshot     |
+| `close()`                    | Close file logger stream        |
 
 ---
 
