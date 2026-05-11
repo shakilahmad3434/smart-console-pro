@@ -63,14 +63,15 @@ function serializeArgs(args) {
 /**
  * Builds the full formatted log line for terminal output (with ANSI colors).
  *
- * Format:  [HH:MM:SS]  ICON LEVEL  (file.js:line)  message
+ * Format:  [HH:MM:SS]  ICON LEVEL  (file.js:line)  message  {meta}
  *
- * @param {string} level   - log | info | warn | error | debug | success
- * @param {any[]}  args    - original console arguments
- * @param {object} config  - smart-console configuration
+ * @param {string}  level   - log | info | warn | error | debug | success
+ * @param {any[]}   args    - original console arguments
+ * @param {object}  config  - smart-console configuration
+ * @param {object}  [meta]  - optional bound metadata from a child logger
  * @returns {string}
  */
-function formatLine(level, args, config) {
+function formatLine(level, args, config, meta) {
   const levelColor = LEVEL_COLORS[level] || CODES.white;
   const icon       = LEVEL_ICONS[level]  || '●';
   const label      = LEVEL_LABELS[level] || level.toUpperCase().padEnd(7);
@@ -94,17 +95,25 @@ function formatLine(level, args, config) {
   // Message
   parts.push(colorize(message, levelColor));
 
+  // Bound child metadata (inline JSON, dimmed)
+  if (meta && Object.keys(meta).length > 0) {
+    try {
+      parts.push(colorize(JSON.stringify(meta), CODES.dim + CODES.gray));
+    } catch { /* ignore unserializable meta */ }
+  }
+
   return parts.join('  ');
 }
 
 /**
  * Builds a plain (no ANSI) log line for writing to log files.
- * @param {string} level
- * @param {any[]}  args
- * @param {object} config
+ * @param {string}  level
+ * @param {any[]}   args
+ * @param {object}  config
+ * @param {object}  [meta]  - optional bound metadata from a child logger
  * @returns {string}
  */
-function formatPlainLine(level, args, config) {
+function formatPlainLine(level, args, config, meta) {
   const icon    = LEVEL_ICONS[level]  || '●';
   const label   = LEVEL_LABELS[level] || level.toUpperCase().padEnd(7);
   const message = serializeArgs(args);
@@ -118,6 +127,14 @@ function formatPlainLine(level, args, config) {
   if (config.callerInfo) parts.push(getCallerInfo());
 
   parts.push(message);
+
+  // Bound child metadata (plain JSON for file output)
+  if (meta && Object.keys(meta).length > 0) {
+    try {
+      parts.push(JSON.stringify(meta));
+    } catch { /* ignore unserializable meta */ }
+  }
+
   return parts.join('  ');
 }
 

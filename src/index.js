@@ -1,5 +1,5 @@
 /**
- * smart-console — A drop-in replacement for Node.js console.
+ * smart-console-pro — A drop-in replacement for Node.js console.
  *
  * Features:
  *  - Timestamps on every log call
@@ -9,15 +9,20 @@
  *  - Silent mode for tests
  *  - New `success()` level
  *  - `configure()` for runtime customization
+ *  - `child(meta)` for bound sub-loggers with context metadata
  *
  * Usage:
- *   const console = require('smart-console');
+ *   const console = require('smart-console-pro');
  *   console.log('Hello');
  *   console.success('Done!');
  *   console.configure({ logFile: './app.log' });
  *
+ *   // Child logger
+ *   const reqLog = console.child({ requestId: 'abc-123' });
+ *   reqLog.info('Request received');   // includes requestId in every line
+ *
  *   // Global override
- *   global.console = require('smart-console');
+ *   global.console = require('smart-console-pro');
  */
 
 'use strict';
@@ -46,8 +51,9 @@ let fileLogger = null;
  * Core dispatch: format and write a log entry at the given level.
  * @param {string}  level   - 'log' | 'info' | 'warn' | 'error' | 'debug' | 'success'
  * @param {any[]}   args    - arguments passed by the caller
+ * @param {object}  [meta]  - optional bound metadata from a child logger
  */
-function dispatch(level, args) {
+function dispatch(level, args, meta) {
   if (config.silent) return;
 
   const effectiveConfig = {
@@ -56,13 +62,13 @@ function dispatch(level, args) {
   };
 
   // Terminal output
-  const colored = formatLine(level, args, effectiveConfig);
+  const colored = formatLine(level, args, effectiveConfig, meta);
   const writer  = level === 'error' ? process.stderr : process.stdout;
   writer.write(colored + '\n');
 
   // File output (plain, no ANSI)
   if (fileLogger) {
-    const plain = formatPlainLine(level, args, effectiveConfig);
+    const plain = formatPlainLine(level, args, effectiveConfig, meta);
     fileLogger.write(plain);
   }
 }
@@ -72,7 +78,7 @@ function dispatch(level, args) {
 const smartConsole = {
 
   /**
-   * Configure smart-console at runtime.
+   * Configure smart-console-pro at runtime.
    * @param {Partial<typeof DEFAULT_CONFIG>} options
    */
   configure(options = {}) {
@@ -129,12 +135,8 @@ const smartConsole = {
    */
   table(data) {
     if (!config.silent) {
-      // Use the native console.table for proper table rendering
-      // but prefix it with our timestamp/caller header
       const header = formatLine('info', ['[table]'], config);
       process.stdout.write(header + '\n');
-      // Delegate actual table rendering to native console
-      // eslint-disable-next-line no-console
       process.stdout.write('\n');
       console.table(data); // intentional native call
     }
@@ -161,6 +163,59 @@ const smartConsole = {
     dispatch('info', [`${label}: ${elapsed}ms`]);
   },
 
+  // ── Child logger ─────────────────────────────────────────────────────────
+
+  /**
+   * Creates a child logger with bound metadata.
+   * Every log call on the child automatically includes `meta` in the output.
+   * The child shares the parent's live config but cannot modify it.
+   *
+   * @param {object} meta - key/value pairs to bind to every log line
+   * @returns {object} A child logger with the same log-level API
+   *
+   * @example
+   *   const reqLog = console.child({ requestId: 'abc-123', userId: 7 });
+   *   reqLog.info('Request received');
+   *   reqLog.error('Validation failed', { field: 'email' });
+   */
+  child(meta = {}) {
+    const boundMeta = { ...meta }; // snapshot — mutations don't affect parent
+
+    const childTimers = {};
+
+    return {
+      log    (...args) { dispatch('log',     args, boundMeta); },
+      info   (...args) { dispatch('info',    args, boundMeta); },
+      warn   (...args) { dispatch('warn',    args, boundMeta); },
+      error  (...args) { dispatch('error',   args, boundMeta); },
+      debug  (...args) { dispatch('debug',   args, boundMeta); },
+      success(...args) { dispatch('success', args, boundMeta); },
+
+      table(data) {
+        if (!config.silent) {
+          const header = formatLine('info', ['[table]'], config, boundMeta);
+          process.stdout.write(header + '\n\n');
+          console.table(data); // intentional native call
+        }
+      },
+
+      time(label = 'default') {
+        childTimers[label] = Date.now();
+      },
+
+      timeEnd(label = 'default') {
+        const start = childTimers[label];
+        if (start === undefined) {
+          dispatch('warn', [`Timer '${label}' does not exist`], boundMeta);
+          return;
+        }
+        const elapsed = Date.now() - start;
+        delete childTimers[label];
+        dispatch('info', [`${label}: ${elapsed}ms`], boundMeta);
+      },
+    };
+  },
+
   // ── Lifecycle ───────────────────────────────────────────────────────────
 
   /**
@@ -176,3 +231,4 @@ const smartConsole = {
 };
 
 module.exports = smartConsole;
+
