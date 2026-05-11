@@ -1,12 +1,14 @@
 {
   "name": "smart-console-pro",
-  "version": "1.3.0",
+  "version": "1.3.1",
   "description": "A drop-in replacement for Node.js console with timestamps, caller info, color-coded levels, file logging, child loggers, and ESM support.",
   "main": "src/index.js",
+  "types": "index.d.ts",
   "exports": {
     ".": {
       "import": "./esm/index.js",
-      "require": "./src/index.js"
+      "require": "./src/index.js",
+      "types": "./index.d.ts"
     }
   },
   "scripts": {
