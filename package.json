@@ -1,6 +1,6 @@
 {
   "name": "smart-console-pro",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "A drop-in replacement for Node.js console with timestamps, caller info, color-coded levels, and file logging.",
   "main": "src/index.js",
   "scripts": {

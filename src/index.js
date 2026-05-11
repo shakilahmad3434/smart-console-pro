@@ -10,6 +10,7 @@
  *  - New `success()` level
  *  - `configure()` for runtime customization
  *  - `child(meta)` for bound sub-loggers with context metadata
+ *  - Auto JSON output when NODE_ENV=production (log-aggregator friendly)
  *
  * Usage:
  *   const console = require('smart-console-pro');
@@ -20,6 +21,9 @@
  *   // Child logger
  *   const reqLog = console.child({ requestId: 'abc-123' });
  *   reqLog.info('Request received');   // includes requestId in every line
+ *
+ *   // Production JSON mode — set NODE_ENV=production:
+ *   // {"level":"info","ts":"2024-01-01T12:00:00.000Z","caller":"app.js:5","msg":"Hello"}
  *
  *   // Global override
  *   global.console = require('smart-console-pro');
@@ -56,14 +60,33 @@ let fileLogger = null;
 function dispatch(level, args, meta) {
   if (config.silent) return;
 
+  const writer = level === 'error' ? process.stderr : process.stdout;
+
+  // ── Production mode: emit structured JSON (no ANSI, machine-readable) ──────
+  if (process.env.NODE_ENV === 'production') {
+    const { getCallerInfo, serializeArgs } = require('./formatter');
+    const entry = {
+      level,
+      ts:     new Date().toISOString(),
+      caller: getCallerInfo(),
+      msg:    serializeArgs(args),
+    };
+    if (meta && Object.keys(meta).length > 0) entry.meta = meta;
+
+    const line = JSON.stringify(entry);
+    writer.write(line + '\n');
+
+    if (fileLogger) fileLogger.write(line);
+    return;
+  }
+
+  // ── Dev mode: pretty colored output (default) ────────────────────────────
   const effectiveConfig = {
     ...config,
     colors: config.colors && !process.env.NO_COLOR,
   };
 
-  // Terminal output
   const colored = formatLine(level, args, effectiveConfig, meta);
-  const writer  = level === 'error' ? process.stderr : process.stdout;
   writer.write(colored + '\n');
 
   // File output (plain, no ANSI)
