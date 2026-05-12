@@ -38,8 +38,9 @@ npm install smart-console-pro
 ## 🚀 Quick Start
 
 **ESM (import)**
+
 ```js
-import log from 'smart-console-pro';
+import log from "smart-console-pro";
 // or named exports:
 // import { info, warn, success } from 'smart-console-pro';
 
@@ -48,6 +49,7 @@ log.success("User authenticated!");
 ```
 
 **CommonJS (require)**
+
 ```js
 const console = require("smart-console-pro");
 
@@ -58,10 +60,10 @@ console.error("Database connection failed");
 **Output:**
 
 ```
-[15:30:01]  ● LOG     (server.js:3)    Server started
-[15:30:01]  ℹ INFO    (server.js:4)    Listening on port 3000
-[15:30:01]  ✖ ERROR   (server.js:6)    Database connection failed
-[15:30:01]  ✔ SUCCESS (server.js:8)    User authenticated!
+[15:30:01]  * LOG     (server.js:3)    Server started
+[15:30:01]  i INFO    (server.js:4)    Listening on port 3000
+[15:30:01]  X ERROR   (server.js:6)    Database connection failed
+[15:30:01]  + SUCCESS (server.js:8)    User authenticated!
 ```
 
 ---
@@ -71,15 +73,15 @@ console.error("Database connection failed");
 You can create a child logger to automatically bind context (like a `requestId` or `userId`) to all logs produced by that logger.
 
 ```js
-import log from 'smart-console-pro';
+import log from "smart-console-pro";
 
-const reqLog = log.child({ requestId: 'abc-123', userId: 42 });
+const reqLog = log.child({ requestId: "abc-123", userId: 42 });
 
-reqLog.info('Processing request...');
-// [15:30:01]  ℹ INFO    (app.js:5)  Processing request...  {"requestId":"abc-123","userId":42}
+reqLog.info("Processing request...");
+// [15:30:01]  i INFO    (app.js:5)  Processing request...
 
-reqLog.error('Validation failed');
-// [15:30:01]  ✖ ERROR   (app.js:8)  Validation failed  {"requestId":"abc-123","userId":42}
+reqLog.error("Validation failed");
+// [15:30:01]  X ERROR   (app.js:8)  Validation failed
 ```
 
 ---
@@ -97,11 +99,13 @@ node server.js
 ```
 
 **Output:**
+
 ```json
 {"level":"info","ts":"2026-05-11T12:00:00.000Z","caller":"server.js:10","msg":"Server started"}
 {"level":"error","ts":"2026-05-11T12:00:01.000Z","caller":"db.js:42","msg":"Query failed","meta":{"requestId":"abc-123"}}
 ```
-> *Dev mode (default) remains pretty and colored.*
+
+> _Dev mode (default) remains pretty and colored._
 
 ---
 
@@ -147,7 +151,7 @@ console.time("fetchData");
 // ... async work ...
 
 console.timeEnd("fetchData");
-// [15:30:02]  ℹ INFO    (app.js:10)    fetchData: 120ms
+// [15:30:02]  i INFO    (app.js:10)    fetchData: 120ms
 ```
 
 ---
@@ -167,33 +171,33 @@ console.log("I am now smart!");
 
 ## 🆚 Comparison
 
-| Feature | `smart-console-pro` | Native `console` | `winston` / `pino` |
-|---------|---------------------|------------------|--------------------|
-| **Setup required** | None (Drop-in) | None | High (Boilerplate) |
-| **Colors & Formatting** | ✅ Built-in | ❌ No | ✅ Requires plugins |
-| **Caller Info (File:Line)** | ✅ Auto-detected | ❌ No | ⚠️ Complex to setup |
-| **Child Loggers** | ✅ Yes (`.child()`) | ❌ No | ✅ Yes |
-| **Production JSON** | ✅ Auto-detects | ❌ No | ✅ Yes |
-| **Bundle Size / Deps** | **0 dependencies** | Built-in | Heavy |
+| Feature                     | `smart-console-pro` | Native `console` | `winston` / `pino`  |
+| --------------------------- | ------------------- | ---------------- | ------------------- |
+| **Setup required**          | None (Drop-in)      | None             | High (Boilerplate)  |
+| **Colors & Formatting**     | ✅ Built-in         | ❌ No            | ✅ Requires plugins |
+| **Caller Info (File:Line)** | ✅ Auto-detected    | ❌ No            | ⚠️ Complex to setup |
+| **Child Loggers**           | ✅ Yes (`.child()`) | ❌ No            | ✅ Yes              |
+| **Production JSON**         | ✅ Auto-detects     | ❌ No            | ✅ Yes              |
+| **Bundle Size / Deps**      | **0 dependencies**  | Built-in         | Heavy               |
 
 ---
 
 ## 📋 API Reference
 
-| Method                       | Description                     |
-| ---------------------------- | ------------------------------- |
-| `log(...args)`               | General log (white)             |
-| `info(...args)`              | Informational (cyan)            |
-| `warn(...args)`              | Warning (yellow)                |
-| `error(...args)`             | Error → stderr (red bold)       |
-| `debug(...args)`             | Debug (magenta)                 |
-| `success(...args)`           | Success (green)                 |
-| `child(meta)`                | Create bound sub-logger ✨      |
-| `time(label)`                | Start a timer                   |
-| `timeEnd(label)`             | End a timer and log elapsed ms  |
-| `configure(options)`         | Update configuration at runtime |
-| `getConfig()`                | Get current config snapshot     |
-| `close()`                    | Close file logger stream        |
+| Method               | Description                     |
+| -------------------- | ------------------------------- |
+| `log(...args)`       | General log (white)             |
+| `info(...args)`      | Informational (cyan)            |
+| `warn(...args)`      | Warning (yellow)                |
+| `error(...args)`     | Error → stderr (red bold)       |
+| `debug(...args)`     | Debug (magenta)                 |
+| `success(...args)`   | Success (green)                 |
+| `child(meta)`        | Create bound sub-logger ✨      |
+| `time(label)`        | Start a timer                   |
+| `timeEnd(label)`     | End a timer and log elapsed ms  |
+| `configure(options)` | Update configuration at runtime |
+| `getConfig()`        | Get current config snapshot     |
+| `close()`            | Close file logger stream        |
 
 ---
 
